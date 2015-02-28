@@ -1,0 +1,1 @@
+ALTER TABLE  `souscription` CHANGE  `utilisateur`  `recepteur` INT( 11 ) NOT NULL ;

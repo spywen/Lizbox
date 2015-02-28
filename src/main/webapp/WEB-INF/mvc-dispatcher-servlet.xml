@@ -1,0 +1,101 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/data/jpa
+        http://www.springframework.org/schema/data/jpa/spring-jpa-1.0.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd">
+
+
+    <mvc:default-servlet-handler/>
+    <context:component-scan base-package="com.apilizbox"/>
+    <jpa:repositories base-package="com.apilizbox.repository" />
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+
+<!--Fichiers de conf-->
+
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:/application.properties</value>
+            </list>
+        </property>
+    </bean>
+
+<!--Fichiers de conf-->
+
+<!--BDD-->
+
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="annotatedClasses">
+            <list>
+                <value>com.apilizbox.entity.UtilisateurEntity</value>
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.connection.url">${db.url}</prop>
+                <prop key="hibernate.connection.driver_class">${db.driver}</prop>
+                <prop key="hibernate.connection.username">${db.username}</prop>
+                <prop key="hibernate.connection.password">${db.password}</prop>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+            </props>
+        </property>
+    </bean>
+
+<!--BDD-->
+
+
+<!--SECURITE-->
+    <bean id="webexpressionHandler" class="org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler" />
+
+    <security:global-method-security pre-post-annotations="enabled" />
+
+    <bean id="utilisateurs" class="com.apilizbox.repository.impl.UtilisateurRepositoryImpl">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <security:authentication-manager>
+        <security:authentication-provider>
+            <security:password-encoder hash="sha"/>
+           <security:jdbc-user-service data-source-ref="dataSource"
+                                        users-by-username-query="SELECT pseudo,password,actif FROM utilisateur WHERE pseudo = ?"
+                                        authorities-by-username-query="SELECT pseudo,role FROM utilisateur WHERE pseudo = ?"/>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <security:http pattern="/js/**" security="none"/>
+    <security:http pattern="/lib/**" security="none"/>
+    <security:http pattern="/style/**" security="none"/>
+    <security:http pattern="/images/**" security="none"/>
+
+
+    <security:http auto-config="true" access-denied-page="/denied" >
+        <security:intercept-url pattern="/documents" access="ROLE_PREMIUM,ROLE_FREE,ROLE_PRO,ROLE_ADMIN"/>
+        <security:intercept-url pattern="/documents/upload" access="ROLE_PREMIUM,ROLE_FREE,ROLE_PRO,ROLE_ADMIN"/>
+        <security:intercept-url pattern="/moncompte" access="ROLE_PREMIUM,ROLE_FREE,ROLE_PRO,ROLE_ADMIN"/>
+
+        <security:form-login login-page="/login" authentication-failure-url="/login?errorlogin" default-target-url="/documents" />
+    </security:http>
+
+<!--SECURITE-->
+
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <!-- setting maximum upload size -->
+        <property name="maxUploadSize" value="${upload.maxsize}" />
+    </bean>
+
+</beans>
